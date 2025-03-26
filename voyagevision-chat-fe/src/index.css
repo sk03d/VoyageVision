@@ -1,0 +1,178 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 223 84% 4%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 84% 5%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 84% 5%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 171 100% 48%;
+    --primary-foreground: 222 47.4% 11.2%;
+
+    --secondary: 270 80% 47%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 224 71.4% 44%;
+
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-space text-foreground font-sans antialiased;
+    background-image: 
+      radial-gradient(circle at 40% 20%, rgba(121, 40, 202, 0.1), transparent 30%),
+      radial-gradient(circle at 80% 40%, rgba(0, 245, 212, 0.08), transparent 30%);
+    background-size: 100% 100%;
+    background-attachment: fixed;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-space-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-space-600 rounded-full;
+  }
+
+  ::selection {
+    @apply bg-purple/40 text-white;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-space-800/60 backdrop-blur-md border border-space-700/50 shadow-lg;
+  }
+  
+  .glass-card {
+    @apply glass rounded-2xl transition-all duration-300;
+  }
+  
+  .glass-card:hover {
+    @apply border-space-600/70 shadow-xl shadow-purple/5;
+  }
+  
+  .btn-primary {
+    @apply px-6 py-3 rounded-full bg-gradient-to-r from-teal to-teal-400 text-space-900 font-medium shadow-lg shadow-teal/20 hover:shadow-teal/30 transition-all duration-300 hover:scale-105 active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 rounded-full bg-gradient-to-r from-purple to-purple-400 text-white font-medium shadow-lg shadow-purple/20 hover:shadow-purple/30 transition-all duration-300 hover:scale-105 active:scale-95;
+  }
+  
+  .btn-outline {
+    @apply px-6 py-3 rounded-full bg-space-800/30 backdrop-blur-sm border border-space-700/70 text-white font-medium shadow-sm hover:border-space-600 transition-all duration-300 hover:bg-space-800/60;
+  }
+  
+  .heading-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-teal via-teal-300 to-purple-300 animate-gradient-shift;
+  }
+  
+  .section-padding {
+    @apply py-16 md:py-24 px-6 md:px-8 lg:px-12;
+  }
+  
+  .section-container {
+    @apply max-w-7xl mx-auto;
+  }
+  
+  .animated-border {
+    position: relative;
+  }
+  
+  .animated-border::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    @apply bg-gradient-to-r from-teal to-purple;
+    transition: width 0.3s ease;
+  }
+  
+  .animated-border:hover::after {
+    width: 100%;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Animation classes with staggered delays */
+.animate-delay-100 {
+  animation-delay: 100ms;
+}
+.animate-delay-200 {
+  animation-delay: 200ms;
+}
+.animate-delay-300 {
+  animation-delay: 300ms;
+}
+.animate-delay-400 {
+  animation-delay: 400ms;
+}
+.animate-delay-500 {
+  animation-delay: 500ms;
+}
+.animate-delay-600 {
+  animation-delay: 600ms;
+}
+.animate-delay-700 {
+  animation-delay: 700ms;
+}
+.animate-delay-800 {
+  animation-delay: 800ms;
+}
+
+/* Background animation elements */
+.bg-noise {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03;
+  z-index: -1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 600 600' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.grid-lines {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  z-index: -1;
+}
