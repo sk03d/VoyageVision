@@ -87,7 +87,7 @@ const Integrations = () => {
 
   return (
     <section className="section-padding relative" id="integrations" ref={sectionRef}>
-      <div className="absolute top-1/4 left-0 w-96 h-96 bg-teal/10 rounded-full filter blur-[120px]"></div>
+      <div className="absolute top-1/4 left-0 w-60 h-96 bg-teal/10 rounded-full filter blur-[120px]"></div>
       <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-purple/10 rounded-full filter blur-[120px]"></div>
       
       <div className="section-container relative z-10">

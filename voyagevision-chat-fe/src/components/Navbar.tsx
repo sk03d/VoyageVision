@@ -34,7 +34,7 @@ const Navbar = () => {
           : 'py-6 bg-transparent'
       }`}
     >
-      <div className="container mx-auto px-6 flex justify-between items-center">
+      <div className="container mx-auto px-4 flex justify-between items-center">
         <a href="#" className="flex items-center gap-2">
           <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-teal to-purple flex items-center justify-center overflow-hidden">
             <svg viewBox="0 0 24 24" className="w-6 h-6 text-white fill-current">
@@ -70,7 +70,7 @@ const Navbar = () => {
       <div className={`md:hidden absolute top-full left-0 w-full bg-space-900/95 backdrop-blur-md transition-all duration-300 overflow-hidden ${
         mobileMenuOpen ? 'max-h-[400px] border-b border-space-700' : 'max-h-0'
       }`}>
-        <div className="container mx-auto px-6 py-4 flex flex-col space-y-4">
+        <div className="container mx-auto px-4 py-4 flex flex-col space-y-4">
           <a href="#features" className="text-sm py-2 text-white/80 hover:text-white transition-colors" onClick={() => setMobileMenuOpen(false)}>Features</a>
           <a href="#whatsapp" className="text-sm py-2 text-white/80 hover:text-white transition-colors" onClick={() => setMobileMenuOpen(false)}>WhatsApp</a>
           <a href="#rewards" className="text-sm py-2 text-white/80 hover:text-white transition-colors" onClick={() => setMobileMenuOpen(false)}>Rewards</a>

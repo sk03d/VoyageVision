@@ -16,7 +16,7 @@ const Hero = () => {
         <div className="grid-lines"></div>
         <div className="bg-noise"></div>
         <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-purple/20 rounded-full filter blur-[100px] animate-pulse-subtle"></div>
-        <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-teal/20 rounded-full filter blur-[100px] animate-pulse-subtle"></div>
+        <div className="absolute bottom-1/4 left-1/3 w-65 h-96 bg-teal/20 rounded-full filter blur-[100px] animate-pulse-subtle"></div>
       </div>
 
       {/* Floating elements */}

@@ -83,7 +83,7 @@ const Features = () => {
   return (
     <section className="section-padding relative" id="features" ref={sectionRef}>
       <div className="absolute top-1/2 right-0 w-96 h-96 bg-purple/10 rounded-full filter blur-[120px]"></div>
-      <div className="absolute bottom-1/3 left-0 w-96 h-96 bg-teal/10 rounded-full filter blur-[120px]"></div>
+      <div className="absolute bottom-1/3 left-0 w-65 h-96 bg-teal/10 rounded-full filter blur-[120px]"></div>
       
       <div className="section-container relative z-10">
         <div className="text-center mb-16">
