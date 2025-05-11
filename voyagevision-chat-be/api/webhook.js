@@ -1,14 +1,5 @@
-require('dotenv').config();
-const express = require('express');
 const twilio = require('twilio');
-const mongoose = require('mongoose');
-const cors = require('cors');
 const axios = require('axios');
-
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 
 // Initialize Twilio client
 const twilioClient = twilio(
@@ -16,13 +7,70 @@ const twilioClient = twilio(
     process.env.TWILIO_AUTH_TOKEN
 );
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
+// Function to extract airport name from message
+function extractAirportName(message) {
+    if (!message) return '';
+    
+    const lowerMessage = message.toLowerCase();
+    let airportName = '';
+    
+    if (lowerMessage.includes('landed at')) {
+        airportName = message.split('landed at')[1].trim();
+    } else if (lowerMessage.includes('arrived at')) {
+        airportName = message.split('arrived at')[1].trim();
+    }
+    
+    return airportName;
+}
 
-// WhatsApp webhook endpoint
-app.post('/webhook', async (req, res) => {
+// Function to generate recommendations using OpenAI (ChatGPT)
+async function generateRecommendations(airportName) {
+    try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error('GEMINI_API_KEY is not configured');
+        }
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-002:generateContent?key=${apiKey}`;
+        const prompt = `Generate a helpful and engaging message with hotel recommendations for someone who just landed at ${airportName} airport. \nInclude:\n1. A friendly welcome message\n2. 3-4 hotel recommendations near the airport\n3. For each hotel, include:\n   - Name\n   - Approximate price range (using $ symbols)\n   - Key features (like airport shuttle, free breakfast, etc.)\n   - Distance from airport\n4. Some travel tips for the area\n\nFormat the response with emojis and make it engaging. Keep it concise but informative.`;
+        const data = {
+            contents: [
+                {
+                    parts: [
+                        { text: prompt }
+                    ]
+                }
+            ]
+        };
+        const response = await axios.post(url, data, { timeout: 20000 });
+        return response.data.candidates[0].content.parts[0].text;
+    } catch (error) {
+        console.error('Error generating recommendations:', error.response?.data || error.message);
+        return "I'm having trouble generating recommendations right now. Please try again later.";
+    }
+}
+
+module.exports = async (req, res) => {
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    );
+
+    // Handle OPTIONS request for CORS
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
     try {
         // Log the incoming request body for debugging
         console.log('Received webhook request:', req.body);
@@ -86,52 +134,4 @@ app.post('/webhook', async (req, res) => {
         console.error('Error processing webhook:', error);
         res.status(500).json({ error: 'Error processing request', details: error.message });
     }
-});
-
-// Function to extract airport name from message
-function extractAirportName(message) {
-    if (!message) return '';
-    
-    const lowerMessage = message.toLowerCase();
-    let airportName = '';
-    
-    if (lowerMessage.includes('landed at')) {
-        airportName = message.split('landed at')[1].trim();
-    } else if (lowerMessage.includes('arrived at')) {
-        airportName = message.split('arrived at')[1].trim();
-    }
-    
-    return airportName;
-}
-
-// Function to generate recommendations using OpenAI (ChatGPT)
-async function generateRecommendations(airportName) {
-    try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            throw new Error('GEMINI_API_KEY is not configured');
-        }
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-002:generateContent?key=${apiKey}`;
-        const prompt = `Generate a helpful and engaging message with hotel recommendations for someone who just landed at ${airportName} airport. \nInclude:\n1. A friendly welcome message\n2. 3-4 hotel recommendations near the airport\n3. For each hotel, include:\n   - Name\n   - Approximate price range (using $ symbols)\n   - Key features (like airport shuttle, free breakfast, etc.)\n   - Distance from airport\n4. Some travel tips for the area\n\nFormat the response with emojis and make it engaging. Keep it concise but informative.`;
-        const data = {
-            contents: [
-                {
-                    parts: [
-                        { text: prompt }
-                    ]
-                }
-            ]
-        };
-        const response = await axios.post(url, data, { timeout: 20000 });
-        return response.data.candidates[0].content.parts[0].text;
-    } catch (error) {
-        console.error('Error generating recommendations:', error.response?.data || error.message);
-        return "I'm having trouble generating recommendations right now. Please try again later.";
-    }
-}
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+}; 

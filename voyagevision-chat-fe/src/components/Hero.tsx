@@ -1,13 +1,28 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowDown, MessageSquare, Award, Zap } from 'lucide-react';
 
 const Hero = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  const handleWhatsAppClick = async () => {
+    try {
+      setIsLoading(true);
+      // Replace with your Twilio WhatsApp number
+      const whatsappNumber = '14155238886';
+      const message = 'Hello VoyageVision!';
+      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+    } catch (error) {
+      console.error('Error opening WhatsApp:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <section className="relative min-h-screen flex items-center section-padding overflow-hidden" id="hero">
@@ -55,10 +70,14 @@ const Hero = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
-              <a href="#whatsapp" className="btn-primary flex items-center justify-center gap-2">
+              <button 
+                onClick={handleWhatsAppClick} 
+                className={`btn-primary flex items-center justify-center gap-2 ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
+                disabled={isLoading}
+              >
                 <MessageSquare size={18} />
-                Try WhatsApp Demo
-              </a>
+                {isLoading ? 'Opening WhatsApp...' : 'Try WhatsApp Demo'}
+              </button>
               <a href="#features" className="btn-outline flex items-center justify-center gap-2">
                 <span>Explore Features</span>
               </a>
