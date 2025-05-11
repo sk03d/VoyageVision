@@ -41,8 +41,11 @@ const Hero = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Origin': 'https://voyagevision.vercel.app'
         },
+        mode: 'cors',
+        credentials: 'include',
         body: JSON.stringify({
           message: message,
           from: 'user'

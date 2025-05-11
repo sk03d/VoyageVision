@@ -56,29 +56,18 @@ async function generateRecommendations(airportName) {
     }
 }
 
-// CORS configuration
-const corsHeaders = {
-    'Access-Control-Allow-Origin': 'https://voyagevision.vercel.app',
-    'Access-Control-Allow-Methods': 'GET,OPTIONS,PATCH,DELETE,POST,PUT',
-    'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Max-Age': '86400', // 24 hours
-};
-
 module.exports = async (req, res) => {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', 'https://voyagevision.vercel.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
-        Object.entries(corsHeaders).forEach(([key, value]) => {
-            res.setHeader(key, value);
-        });
         res.status(200).end();
         return;
     }
-
-    // Set CORS headers for all responses
-    Object.entries(corsHeaders).forEach(([key, value]) => {
-        res.setHeader(key, value);
-    });
 
     // Only allow POST requests
     if (req.method !== 'POST') {
