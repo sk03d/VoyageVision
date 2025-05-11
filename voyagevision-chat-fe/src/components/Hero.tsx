@@ -9,6 +9,9 @@ const Hero = () => {
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
 
+  // Backend URL - Update this with your actual deployed URL
+  const BACKEND_URL = 'https://voyagevision-chat-be.vercel.app/api/webhook';
+
   useEffect(() => {
     setIsVisible(true);
   }, []);
@@ -32,10 +35,13 @@ const Hero = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      const response = await fetch('https://voyagevision-chat-2lzka8nz4-skduttas-projects.vercel.app/api/webhook', {
+      console.log('Attempting to connect to backend:', BACKEND_URL);
+      
+      const response = await fetch(BACKEND_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           message: message,
@@ -47,7 +53,16 @@ const Hero = () => {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
+        const errorData = await response.text();
+        console.error('Backend error response:', errorData);
+        throw new Error(`Server responded with status: ${response.status} - ${errorData}`);
+      }
+
+      const responseData = await response.json();
+      console.log('Backend response:', responseData);
+      
+      if (!responseData.message) {
+        throw new Error('Invalid response from server: missing message');
       }
 
       setSuccess(true);
@@ -56,11 +71,11 @@ const Hero = () => {
       const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error details:', error);
       
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          setError('Connection timed out. Please try again.');
+          setError('Connection timed out. Please check if the backend server is running.');
         } else if (retryCount < MAX_RETRIES) {
           setRetryCount(prev => prev + 1);
           setError(`Connection failed. Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
@@ -68,7 +83,7 @@ const Hero = () => {
           setTimeout(handleWhatsAppClick, 2000);
           return;
         } else {
-          setError('Failed to connect after multiple attempts. Please try again later.');
+          setError('Failed to connect to the backend server. Please try again later or contact support.');
         }
       } else {
         setError('An unexpected error occurred. Please try again.');
