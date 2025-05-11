@@ -10,12 +10,11 @@
     {
       "src": "/api/(.*)",
       "dest": "/api/$1",
-      "methods": ["GET", "POST", "OPTIONS"],
       "headers": {
         "Access-Control-Allow-Origin": "https://voyagevision.vercel.app",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Accept, Origin",
-        "Access-Control-Allow-Credentials": "true"
+        "Access-Control-Allow-Headers": "Content-Type, Accept",
+        "Access-Control-Max-Age": "86400"
       }
     }
   ]
