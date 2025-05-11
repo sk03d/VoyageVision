@@ -1,11 +1,30 @@
+require('dotenv').config();
 const twilio = require('twilio');
 const axios = require('axios');
 
-// Initialize Twilio client
-const twilioClient = twilio(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN
-);
+// Log environment variables (for debugging)
+console.log('Environment variables:', {
+    hasTwilioSid: !!process.env.TWILIO_ACCOUNT_SID,
+    hasTwilioToken: !!process.env.TWILIO_AUTH_TOKEN,
+    hasTwilioPhone: !!process.env.TWILIO_PHONE_NUMBER,
+    hasGeminiKey: !!process.env.GEMINI_API_KEY
+});
+
+// Initialize Twilio client with error handling
+let twilioClient = null;
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    try {
+        twilioClient = twilio(
+            process.env.TWILIO_ACCOUNT_SID,
+            process.env.TWILIO_AUTH_TOKEN
+        );
+        console.log('Twilio client initialized successfully');
+    } catch (error) {
+        console.error('Failed to initialize Twilio client:', error);
+    }
+} else {
+    console.warn('Twilio credentials not found in environment variables');
+}
 
 // Function to extract airport name from message
 function extractAirportName(message) {
@@ -51,16 +70,13 @@ async function generateRecommendations(airportName) {
 }
 
 module.exports = async (req, res) => {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', 'https://voyagevision.vercel.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Origin');
+    res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
-    // Handle OPTIONS request for CORS
+    // Handle preflight requests
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
@@ -79,9 +95,21 @@ module.exports = async (req, res) => {
         const messageBody = req.body.Body || req.body.message || '';
         const fromNumber = req.body.From || req.body.from || '';
 
-        if (!messageBody || !fromNumber) {
-            console.error('Missing required fields:', { messageBody, fromNumber });
-            return res.status(400).json({ error: 'Missing required fields' });
+        if (!messageBody) {
+            console.error('Missing message body');
+            return res.status(400).json({ error: 'Missing message body' });
+        }
+
+        // Check if this is a direct message from the frontend
+        if (fromNumber === 'user') {
+            const welcomeMessage = "Welcome to VoyageVision! I can help you find hotels near any airport. Just let me know when you've landed by saying 'I've landed at [Airport Name]'!";
+            return res.json({ message: welcomeMessage });
+        }
+
+        // Handle WhatsApp messages
+        if (!fromNumber) {
+            console.error('Missing sender number');
+            return res.status(400).json({ error: 'Missing sender number' });
         }
 
         // Check if the message is about landing at any airport
@@ -93,45 +121,51 @@ module.exports = async (req, res) => {
             
             if (!airportName) {
                 const errorMessage = "I couldn't identify the airport name. Please try again with a message like 'I've landed at [Airport Name]'";
-                await twilioClient.messages.create({
-                    body: errorMessage,
-                    from: process.env.TWILIO_PHONE_NUMBER,
-                    to: fromNumber
-                });
+                if (twilioClient) {
+                    await twilioClient.messages.create({
+                        body: errorMessage,
+                        from: process.env.TWILIO_PHONE_NUMBER,
+                        to: fromNumber
+                    });
+                }
                 return res.json({ message: errorMessage });
             }
 
-            // Generate personalized recommendations using OpenAI (ChatGPT)
+            // Generate personalized recommendations
             const recommendations = await generateRecommendations(airportName);
             
-            // Send response back via WhatsApp (handle Twilio 1600 char limit)
-            const MAX_LENGTH = 1600;
-            for (let i = 0; i < recommendations.length; i += MAX_LENGTH) {
-                const chunk = recommendations.substring(i, i + MAX_LENGTH);
-                await twilioClient.messages.create({
-                    body: chunk,
-                    from: process.env.TWILIO_PHONE_NUMBER,
-                    to: fromNumber
-                });
+            // Send response back via WhatsApp
+            if (twilioClient) {
+                const MAX_LENGTH = 1600;
+                for (let i = 0; i < recommendations.length; i += MAX_LENGTH) {
+                    const chunk = recommendations.substring(i, i + MAX_LENGTH);
+                    await twilioClient.messages.create({
+                        body: chunk,
+                        from: process.env.TWILIO_PHONE_NUMBER,
+                        to: fromNumber
+                    });
+                }
             }
-            res.json({ message: recommendations });
+            return res.json({ message: recommendations });
         } else {
             // Default response
             const welcomeMessage = "Welcome to VoyageVision! I can help you find hotels near any airport. Just let me know when you've landed by saying 'I've landed at [Airport Name]'!";
             
-            if (fromNumber === 'user') {
-                res.json({ message: welcomeMessage });
-            } else {
+            if (twilioClient) {
                 await twilioClient.messages.create({
                     body: welcomeMessage,
                     from: process.env.TWILIO_PHONE_NUMBER,
                     to: fromNumber
                 });
-                res.json({ message: welcomeMessage });
             }
+            return res.json({ message: welcomeMessage });
         }
     } catch (error) {
         console.error('Error processing webhook:', error);
-        res.status(500).json({ error: 'Error processing request', details: error.message });
+        return res.status(500).json({ 
+            error: 'Error processing request', 
+            details: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 }; 

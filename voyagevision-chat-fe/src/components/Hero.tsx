@@ -1,26 +1,108 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowDown, MessageSquare, Award, Zap } from 'lucide-react';
+import { ArrowDown, MessageSquare, Award, Zap, Loader2 } from 'lucide-react';
 
 const Hero = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+
+  // Backend URL - Update this with your actual deployed URL
+  const BACKEND_URL = 'https://voyagevision-chat-be.vercel.app/api/webhook';
+  // WhatsApp number with country code (no spaces or special characters)
+  const WHATSAPP_NUMBER = '14155238886';
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
+  const resetStates = () => {
+    setError(null);
+    setSuccess(false);
+    setRetryCount(0);
+  };
+
   const handleWhatsAppClick = async () => {
     try {
       setIsLoading(true);
-      // Replace with your Twilio WhatsApp number
-      const whatsappNumber = '14155238886';
+      resetStates();
+      
       const message = 'Hello VoyageVision!';
-      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
+      
+      // First, send the message to our backend with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      console.log('Attempting to connect to backend:', BACKEND_URL);
+      
+      const response = await fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': 'https://voyagevision.vercel.app'
+        },
+        mode: 'cors',
+        credentials: 'omit',
+        body: JSON.stringify({
+          message: message,
+          from: 'user'
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Backend error response:', errorData);
+        throw new Error(`Server responded with status: ${response.status} - ${errorData}`);
+      }
+
+      const responseData = await response.json();
+      console.log('Backend response:', responseData);
+      
+      if (!responseData.message) {
+        throw new Error('Invalid response from server: missing message');
+      }
+
+      setSuccess(true);
+      
+      // Format the WhatsApp URL properly
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+      
+      console.log('Opening WhatsApp URL:', whatsappUrl);
+      
+      // Open WhatsApp in a new tab
+      const newWindow = window.open(whatsappUrl, '_blank');
+      if (!newWindow) {
+        throw new Error('Failed to open WhatsApp. Please check your popup blocker settings.');
+      }
     } catch (error) {
-      console.error('Error opening WhatsApp:', error);
+      console.error('Error details:', error);
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          setError('Connection timed out. Please check if the backend server is running.');
+        } else if (retryCount < MAX_RETRIES) {
+          setRetryCount(prev => prev + 1);
+          setError(`Connection failed. Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+          // Retry after 2 seconds
+          setTimeout(handleWhatsAppClick, 2000);
+          return;
+        } else {
+          setError('Failed to connect to the backend server. Please try again later or contact support.');
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
-      setIsLoading(false);
+      if (retryCount >= MAX_RETRIES) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -72,15 +154,44 @@ const Hero = () => {
             <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
               <button 
                 onClick={handleWhatsAppClick} 
-                className={`btn-primary flex items-center justify-center gap-2 ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
+                className={`btn-primary flex items-center justify-center gap-2 ${
+                  isLoading ? 'opacity-75 cursor-not-allowed' : ''
+                } relative`}
                 disabled={isLoading}
               >
-                <MessageSquare size={18} />
-                {isLoading ? 'Opening WhatsApp...' : 'Try WhatsApp Demo'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>
+                      {retryCount > 0 
+                        ? `Retrying... (${retryCount}/${MAX_RETRIES})`
+                        : 'Connecting...'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare size={18} />
+                    <span>Try WhatsApp Demo</span>
+                  </>
+                )}
               </button>
               <a href="#features" className="btn-outline flex items-center justify-center gap-2">
                 <span>Explore Features</span>
               </a>
+            </div>
+
+            {/* Status Messages */}
+            <div className="mt-4 text-center">
+              {error && (
+                <div className="text-red-500 text-sm bg-red-500/10 p-3 rounded-lg inline-block">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="text-green-500 text-sm bg-green-500/10 p-3 rounded-lg inline-block">
+                  Connected successfully! WhatsApp should open in a new tab.
+                </div>
+              )}
             </div>
           </div>
 
