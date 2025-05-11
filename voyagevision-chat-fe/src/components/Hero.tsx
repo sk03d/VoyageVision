@@ -1,26 +1,82 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowDown, MessageSquare, Award, Zap } from 'lucide-react';
+import { ArrowDown, MessageSquare, Award, Zap, Loader2 } from 'lucide-react';
 
 const Hero = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
+  const resetStates = () => {
+    setError(null);
+    setSuccess(false);
+    setRetryCount(0);
+  };
+
   const handleWhatsAppClick = async () => {
     try {
       setIsLoading(true);
+      resetStates();
+      
       // Replace with your Twilio WhatsApp number
       const whatsappNumber = '14155238886';
       const message = 'Hello VoyageVision!';
+      
+      // First, send the message to our backend with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch('https://voyagevision-chat-2lzka8nz4-skduttas-projects.vercel.app/api/webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          from: 'user'
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+
+      setSuccess(true);
+      
+      // Then open WhatsApp with the message
       const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
     } catch (error) {
-      console.error('Error opening WhatsApp:', error);
+      console.error('Error:', error);
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          setError('Connection timed out. Please try again.');
+        } else if (retryCount < MAX_RETRIES) {
+          setRetryCount(prev => prev + 1);
+          setError(`Connection failed. Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+          // Retry after 2 seconds
+          setTimeout(handleWhatsAppClick, 2000);
+          return;
+        } else {
+          setError('Failed to connect after multiple attempts. Please try again later.');
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
-      setIsLoading(false);
+      if (retryCount >= MAX_RETRIES) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -72,15 +128,44 @@ const Hero = () => {
             <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
               <button 
                 onClick={handleWhatsAppClick} 
-                className={`btn-primary flex items-center justify-center gap-2 ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
+                className={`btn-primary flex items-center justify-center gap-2 ${
+                  isLoading ? 'opacity-75 cursor-not-allowed' : ''
+                } relative`}
                 disabled={isLoading}
               >
-                <MessageSquare size={18} />
-                {isLoading ? 'Opening WhatsApp...' : 'Try WhatsApp Demo'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>
+                      {retryCount > 0 
+                        ? `Retrying... (${retryCount}/${MAX_RETRIES})`
+                        : 'Connecting...'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare size={18} />
+                    <span>Try WhatsApp Demo</span>
+                  </>
+                )}
               </button>
               <a href="#features" className="btn-outline flex items-center justify-center gap-2">
                 <span>Explore Features</span>
               </a>
+            </div>
+
+            {/* Status Messages */}
+            <div className="mt-4 text-center">
+              {error && (
+                <div className="text-red-500 text-sm bg-red-500/10 p-3 rounded-lg inline-block">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="text-green-500 text-sm bg-green-500/10 p-3 rounded-lg inline-block">
+                  Connected successfully! WhatsApp should open in a new tab.
+                </div>
+              )}
             </div>
           </div>
 
