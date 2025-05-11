@@ -42,7 +42,7 @@ const Hero = () => {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Origin': 'https://voyagevision.vercel.app'
+          'Origin': 'https://voyagevision-chat-be.vercel.app'
         },
         mode: 'cors',
         credentials: 'include',
