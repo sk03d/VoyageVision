@@ -1,16 +1,29 @@
+require('dotenv').config();
 const twilio = require('twilio');
 const axios = require('axios');
 
+// Log environment variables (for debugging)
+console.log('Environment variables:', {
+    hasTwilioSid: !!process.env.TWILIO_ACCOUNT_SID,
+    hasTwilioToken: !!process.env.TWILIO_AUTH_TOKEN,
+    hasTwilioPhone: !!process.env.TWILIO_PHONE_NUMBER,
+    hasGeminiKey: !!process.env.GEMINI_API_KEY
+});
+
 // Initialize Twilio client with error handling
-let twilioClient;
-try {
-    twilioClient = twilio(
-        process.env.TWILIO_ACCOUNT_SID,
-        process.env.TWILIO_AUTH_TOKEN
-    );
-    console.log('Twilio client initialized successfully');
-} catch (error) {
-    console.error('Failed to initialize Twilio client:', error);
+let twilioClient = null;
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    try {
+        twilioClient = twilio(
+            process.env.TWILIO_ACCOUNT_SID,
+            process.env.TWILIO_AUTH_TOKEN
+        );
+        console.log('Twilio client initialized successfully');
+    } catch (error) {
+        console.error('Failed to initialize Twilio client:', error);
+    }
+} else {
+    console.warn('Twilio credentials not found in environment variables');
 }
 
 // Function to extract airport name from message
@@ -60,12 +73,12 @@ module.exports = async (req, res) => {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', 'https://voyagevision.vercel.app');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Origin');
     res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
-        res.status(204).end();
+        res.status(200).end();
         return;
     }
 
