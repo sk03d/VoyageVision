@@ -11,6 +11,8 @@ const Hero = () => {
 
   // Backend URL - Update this with your actual deployed URL
   const BACKEND_URL = 'https://voyagevision-chat-be.vercel.app/api/webhook';
+  // WhatsApp number with country code (no spaces or special characters)
+  const WHATSAPP_NUMBER = '14155238886';
 
   useEffect(() => {
     setIsVisible(true);
@@ -27,8 +29,6 @@ const Hero = () => {
       setIsLoading(true);
       resetStates();
       
-      // Replace with your Twilio WhatsApp number
-      const whatsappNumber = '14155238886';
       const message = 'Hello VoyageVision!';
       
       // First, send the message to our backend with timeout
@@ -67,9 +67,17 @@ const Hero = () => {
 
       setSuccess(true);
       
-      // Then open WhatsApp with the message
-      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
+      // Format the WhatsApp URL properly
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+      
+      console.log('Opening WhatsApp URL:', whatsappUrl);
+      
+      // Open WhatsApp in a new tab
+      const newWindow = window.open(whatsappUrl, '_blank');
+      if (!newWindow) {
+        throw new Error('Failed to open WhatsApp. Please check your popup blocker settings.');
+      }
     } catch (error) {
       console.error('Error details:', error);
       
